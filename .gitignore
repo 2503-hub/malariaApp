@@ -1,0 +1,84 @@
+# =========================
+# Python / Backend (FastAPI)
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+tf-env/
+pip-log.txt
+pip-delete-this-directory.txt
+*.log
+
+# FastAPI / local settings
+.env
+*.env
+
+# =========================
+# Machine Learning Models
+# =========================
+# Custom: Kept *.keras unblocked because malaria_model.keras (~8MB) is light 
+# and needed for the deployment app to run immediately.
+*.h5
+*.pt
+*.pth
+*.joblib
+*.pkl
+*.model
+
+# Large datasets
+*.csv
+*.zip
+*.tar
+*.tar.gz
+data/
+dataset/
+
+# =========================
+# Jupyter Notebook
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Flutter / Dart
+# =========================
+.dart_tool/
+.build/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+pubspec.lock
+
+# Android / iOS
+android/.gradle/
+android/app/debug/
+android/app/profile/
+android/app/release/
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+
+# =========================
+# IDEs
+# =========================
+.vscode/
+.idea/
+*.iml
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Logs / misc
+# =========================
+*.log
+*.tmp
