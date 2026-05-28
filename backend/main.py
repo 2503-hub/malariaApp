@@ -32,6 +32,7 @@ app.add_middleware(
 # -------------------------
 # LOAD MODEL
 # -------------------------
+# Pre-loaded globally so it initializes once on server startup
 model = tf.keras.models.load_model(MODEL_PATH)
 
 # -------------------------
@@ -60,10 +61,12 @@ def health_check():
 # -------------------------
 # PREDICT ENDPOINT
 # -------------------------
+# Using standard 'def' instead of 'async def' tells FastAPI to automatically
+# run heavy TensorFlow inference in a separate, optimized thread pool.
 @app.post("/predict")
-async def predict(file: UploadFile = File(...)):
+def predict(file: UploadFile = File(...)):
 
-    # DEBUG (important for your 400 error)
+    # DEBUG (important for validating incoming requests)
     print("Received filename:", file.filename)
     print("Received content-type:", file.content_type)
 
@@ -77,8 +80,8 @@ async def predict(file: UploadFile = File(...)):
             detail="Invalid file type. Please upload an image."
         )
 
-    # Read image
-    image_bytes = await file.read()
+    # Read image bytes synchronously from the underlying file object
+    image_bytes = file.file.read()
 
     if len(image_bytes) == 0:
         raise HTTPException(status_code=400, detail="Empty file uploaded")
