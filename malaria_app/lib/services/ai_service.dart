@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
-class AIService {
+class AIService { 
   static const String baseUrl = 'http://192.168.1.141:8000';
 
   static Future<Map<String, dynamic>> predict(XFile image) async {
