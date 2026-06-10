@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   static Future<void> sendImage(File imageFile) async {
-    var uri = Uri.parse("http://192.168.10.36:8000/predict");
+    var uri = Uri.parse("http://192.168.198.21:8000/predict");
 
     var request = http.MultipartRequest('POST', uri);
 

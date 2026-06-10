@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../models/scan_history.dart';
+import '../repositories/scan_history_repository.dart';
+import '../services/scan_image_storage.dart';
 import 'result_screen.dart';
 import '../services/ai_service.dart';
 
@@ -14,6 +17,8 @@ class LoadingScreen extends StatefulWidget {
 }
 
 class _LoadingScreenState extends State<LoadingScreen> {
+  final ScanHistoryRepository _historyRepository = ScanHistoryRepository();
+  final ScanImageStorage _imageStorage = ScanImageStorage.instance;
   String? errorMessage;
 
   @override
@@ -29,6 +34,18 @@ class _LoadingScreenState extends State<LoadingScreen> {
 
     try {
       final result = await AIService.predict(widget.image);
+      final label = result["label"] as String;
+      final confidence = (result["confidence"] as num).toDouble();
+      final savedImagePath = await _imageStorage.saveImage(widget.image);
+
+      await _historyRepository.saveScan(
+        ScanHistory(
+          scannedAt: DateTime.now(),
+          imagePath: savedImagePath,
+          prediction: label,
+          confidence: confidence,
+        ),
+      );
 
       if (!mounted) return;
 
@@ -37,8 +54,8 @@ class _LoadingScreenState extends State<LoadingScreen> {
         MaterialPageRoute(
           builder: (_) => ResultScreen(
             image: widget.image,
-            label: result["label"],
-            confidence: (result["confidence"] as num).toDouble(),
+            label: label,
+            confidence: confidence,
           ),
         ),
       );

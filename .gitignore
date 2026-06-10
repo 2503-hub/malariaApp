@@ -36,12 +36,14 @@ pip-delete-this-directory.txt
 *.tar
 *.tar.gz
 data/
+cell_images_3class/
 dataset/
 
 # =========================
 # Jupyter Notebook
 # =========================
 .ipynb_checkpoints/
+.ipynb
 
 # =========================
 # Flutter / Dart

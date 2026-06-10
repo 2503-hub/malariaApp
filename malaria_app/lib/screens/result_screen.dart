@@ -18,9 +18,12 @@ class ResultScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final normalizedLabel = label.trim().toLowerCase();
     final isInfected = normalizedLabel == 'parasitized';
+    final isInvalid = normalizedLabel == 'not cell image';
     final statusColor = isInfected
         ? const Color(0xFFDC2626)
-        : const Color(0xFF16A34A);
+        : isInvalid
+            ? const Color(0xFF64748B)
+            : const Color(0xFF16A34A);
     final confidencePercent = confidence.clamp(0, 100).toDouble();
 
     return Scaffold(
@@ -61,7 +64,11 @@ class ResultScreen extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        isInfected ? Icons.warning_amber : Icons.check_circle,
+                        isInfected
+                            ? Icons.warning_amber
+                            : isInvalid
+                                ? Icons.image_not_supported
+                                : Icons.check_circle,
                         color: statusColor,
                         size: 30,
                       ),
@@ -120,7 +127,9 @@ class ResultScreen extends StatelessWidget {
                   Text(
                     isInfected
                         ? 'Malaria parasites were detected. Please consult a qualified health professional for confirmatory testing and treatment.'
-                        : 'No malaria parasites were detected in this image. Continue routine health monitoring and seek medical care if symptoms persist.',
+                        : isInvalid
+                            ? 'The uploaded image does not appear to be a valid blood cell smear. Please upload a clearer cell image for analysis.'
+                            : 'No malaria parasites were detected in this image. Continue routine health monitoring and seek medical care if symptoms persist.',
                     style: const TextStyle(
                       color: Color(0xFF475569),
                       fontSize: 15,

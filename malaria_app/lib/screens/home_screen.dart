@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'about_screen.dart';
+import 'batch_analysis_screen.dart';
 import 'history_screen.dart';
+import 'health_assistant_screen.dart';
 import 'image_upload_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -61,6 +63,30 @@ class HomeScreen extends StatelessWidget {
               icon: Icons.camera_alt,
               label: 'Capture Image',
               onTap: () => _openUpload(context, ImageSource.camera),
+            ),
+            _HomeAction(
+              icon: Icons.collections,
+              label: 'Batch Analysis',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const BatchAnalysisScreen(),
+                  ),
+                );
+              },
+            ),
+            _HomeAction(
+              icon: Icons.chat,
+              label: 'AI Health Assistant',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const HealthAssistantScreen(),
+                  ),
+                );
+              },
             ),
             _HomeAction(
               icon: Icons.history,
