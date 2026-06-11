@@ -8,6 +8,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 from pydantic import BaseModel
+from schemas.chat import ChatResponse
 
 # -------------------------
 # CONFIG
@@ -45,14 +46,7 @@ class BatchPredictionResponse(BaseModel):
     summary: BatchSummary
 
 
-class ChatRequest(BaseModel):
-    message: str
-
-
-class ChatResponse(BaseModel):
-    reply: str
-    topic: str
-    suggestions: List[str]
+from routers.chat import router as chat_router
 
 
 CHAT_SUGGESTIONS = [
@@ -412,9 +406,7 @@ async def predict_batch(files: List[UploadFile] = File(...)):
     )
 
 
-@app.post("/chat", response_model=ChatResponse)
-def chat(request: ChatRequest):
-    return answer_chat(request.message)
+app.include_router(chat_router)
 
 if __name__ == "__main__":
     import uvicorn

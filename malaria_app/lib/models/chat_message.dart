@@ -12,6 +12,14 @@ class ChatMessage {
   });
 
   bool get isUser => sender == ChatMessageSender.user;
+
+  Map<String, dynamic> toApiJson() {
+    return {
+      'role': isUser ? 'user' : 'model',
+      'content': text,
+      'timestamp': timestamp.toUtc().toIso8601String(),
+    };
+  }
 }
 
 class ChatResponse {

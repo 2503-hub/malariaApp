@@ -10,6 +10,7 @@ env/
 venv/
 .venv/
 tf-env/
+malaria-env/
 pip-log.txt
 pip-delete-this-directory.txt
 *.log

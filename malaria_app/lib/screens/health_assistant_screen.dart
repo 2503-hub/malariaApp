@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../models/chat_message.dart';
-import '../services/ai_service.dart';
+import '../services/chat_service.dart';
+import '../repositories/scan_history_repository.dart';
+import '../models/scan_history.dart';
 
 class HealthAssistantScreen extends StatefulWidget {
   const HealthAssistantScreen({super.key});
@@ -17,6 +19,7 @@ class _HealthAssistantScreenState extends State<HealthAssistantScreen> {
     'Symptoms',
     'Prevention',
     'Treatment',
+    'Explain My Result',
     'About Malaria',
   ];
 
@@ -31,6 +34,23 @@ class _HealthAssistantScreenState extends State<HealthAssistantScreen> {
     ),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedHistory();
+  }
+
+  Future<void> _loadSavedHistory() async {
+    final saved = await ChatService.loadHistory();
+    if (saved.isNotEmpty) {
+      setState(() {
+        _messages.clear();
+        _messages.addAll(saved);
+      });
+      _scrollToBottom();
+    }
+  }
+
   bool _isTyping = false;
 
   @override
@@ -41,9 +61,26 @@ class _HealthAssistantScreenState extends State<HealthAssistantScreen> {
   }
 
   Future<void> _sendMessage([String? quickMessage]) async {
-    final message = (quickMessage ?? _messageController.text).trim();
+    String message = (quickMessage ?? _messageController.text).trim();
+
+    if (quickMessage == 'Explain My Result') {
+      try {
+        final repo = ScanHistoryRepository();
+        final scans = await repo.getScans();
+        if (scans.isNotEmpty) {
+          final last = scans.first;
+          message = 'Please explain this analysis result: ${last.prediction} with ${last.confidence}% confidence.';
+        } else {
+          message = 'I recently analyzed no images. Please run an analysis first.';
+        }
+      } catch (_) {
+        message = 'I could not access recent analysis results.';
+      }
+    }
+
     if (message.isEmpty || _isTyping) return;
 
+    final historyBeforeSend = List<ChatMessage>.from(_messages);
     _messageController.clear();
     setState(() {
       _messages.add(
@@ -58,7 +95,12 @@ class _HealthAssistantScreenState extends State<HealthAssistantScreen> {
     _scrollToBottom();
 
     try {
-      final response = await AIService.chat(message);
+      final response = await ChatService.sendMessage(
+        message,
+        history: historyBeforeSend,
+      );
+      // persist after successful response
+      await ChatService.saveHistory(_messages);
       if (!mounted) return;
 
       setState(() {
@@ -70,14 +112,13 @@ class _HealthAssistantScreenState extends State<HealthAssistantScreen> {
           ),
         );
       });
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
 
       setState(() {
         _messages.add(
           ChatMessage(
-            text:
-                'I could not reach the health assistant service. Please make sure the backend server is running.',
+            text: _friendlyError(error),
             sender: ChatMessageSender.bot,
             timestamp: DateTime.now(),
           ),
@@ -89,8 +130,22 @@ class _HealthAssistantScreenState extends State<HealthAssistantScreen> {
       setState(() {
         _isTyping = false;
       });
+      await ChatService.saveHistory(_messages);
       _scrollToBottom();
     }
+  }
+
+  String _friendlyError(Object error) {
+    final message = error.toString().replaceFirst('Exception: ', '').trim();
+    if (message.contains('GEMINI_API_KEY')) {
+      return 'The health assistant backend is running, but Gemini is not configured yet. Add GEMINI_API_KEY to backend/.env and restart the backend.';
+    }
+
+    if (message.isNotEmpty) {
+      return 'Health assistant error: $message';
+    }
+
+    return 'I could not reach the health assistant service. Please make sure the backend server is running.';
   }
 
   void _scrollToBottom() {
@@ -108,7 +163,30 @@ class _HealthAssistantScreenState extends State<HealthAssistantScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('AI Health Assistant')),
+      appBar: AppBar(
+        title: const Text('AI Health Assistant'),
+        actions: [
+          IconButton(
+            tooltip: 'Clear chat history',
+            onPressed: () async {
+              await ChatService.clearHistory();
+              if (!mounted) return;
+              setState(() {
+                _messages.clear();
+                _messages.add(
+                  ChatMessage(
+                    text:
+                        'Hello. I can answer malaria questions and explain prediction results. How can I help?',
+                    sender: ChatMessageSender.bot,
+                    timestamp: DateTime.now(),
+                  ),
+                );
+              });
+            },
+            icon: const Icon(Icons.delete_forever),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Column(
           children: [
