@@ -249,10 +249,10 @@ class OnDeviceMalariaService {
       final confidence = isUninfected ? positive : 1 - positive;
 
       return _DecodedResult(
-        prediction: _applyThreshold(prediction, confidence),
+        prediction: prediction,
         confidence: confidence * 100,
         detail: confidence < _confidenceThreshold
-            ? 'The model is not confident enough to make a reliable call.'
+            ? 'Low-confidence prediction. Please review the image quality before relying on this result.'
             : null,
       );
     }
@@ -267,16 +267,18 @@ class OnDeviceMalariaService {
         prediction: predicted,
         confidence: confidence * 100,
         detail:
-            'The uploaded image does not appear to be a blood smear cell image.',
+            confidence < _confidenceThreshold
+                ? 'The model is not fully confident, but this image does not look like a clear blood smear cell image.'
+                : 'The uploaded image does not appear to be a blood smear cell image.',
       );
     }
 
     if (confidence < _confidenceThreshold) {
       return _DecodedResult(
-        prediction: 'Uncertain',
+        prediction: predicted,
         confidence: confidence * 100,
         detail:
-            'The model is not confident enough to make a reliable call.',
+            'Low-confidence prediction. Please upload a clearer cell image if possible.',
       );
     }
 
@@ -284,12 +286,6 @@ class OnDeviceMalariaService {
       prediction: predicted,
       confidence: confidence * 100,
     );
-  }
-
-  String _applyThreshold(String prediction, double confidence) {
-    if (prediction == 'Not Cell Image') return prediction;
-    if (confidence < _confidenceThreshold) return 'Uncertain';
-    return prediction;
   }
 
   double _clampProbability(double value) {

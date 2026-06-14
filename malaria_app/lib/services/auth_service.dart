@@ -15,7 +15,6 @@ class AuthService {
   static const String _baseUrl = 'http://192.168.213.21:8000';
   static const String _tokenKey = 'auth_token';
   static const String _userKey = 'auth_user';
-  static const String _demoToken = 'offline-demo-session';
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
@@ -59,25 +58,6 @@ class AuthService {
   Future<void> persistSession(String token, User user) async {
     await _storage.write(key: _tokenKey, value: token);
     await _storage.write(key: _userKey, value: jsonEncode(user.toJson()));
-  }
-
-  Future<User> startOfflineDemo({
-    String? fullName,
-    String? email,
-  }) async {
-    final demoUser = User(
-      id: -1,
-      fullName: (fullName?.trim().isNotEmpty ?? false)
-          ? fullName!.trim()
-          : 'Offline Demo User',
-      email: (email?.trim().isNotEmpty ?? false)
-          ? email!.trim()
-          : 'demo@local',
-      createdAt: DateTime.now(),
-    );
-
-    await persistSession(_demoToken, demoUser);
-    return demoUser;
   }
 
   Future<void> clearSession() async {

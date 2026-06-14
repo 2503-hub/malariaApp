@@ -21,10 +21,21 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _resolveInitialRoute() async {
-    await Future<void>.delayed(const Duration(seconds: 2));
+    const splashDelay = Duration(seconds: 2);
+    const authTimeout = Duration(seconds: 3);
+
+    await Future<void>.delayed(splashDelay);
     if (!mounted) return;
 
-    final signedIn = await AuthService.instance.isSignedIn();
+    bool signedIn = false;
+    try {
+      signedIn = await AuthService.instance
+          .isSignedIn()
+          .timeout(authTimeout);
+    } catch (_) {
+      signedIn = false;
+    }
+
     if (!mounted) return;
 
     Navigator.pushReplacement(

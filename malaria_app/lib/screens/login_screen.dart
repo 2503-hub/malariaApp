@@ -25,18 +25,10 @@ class _LoginScreenState extends State<LoginScreen>
 
   bool _loading = false;
   bool _obscurePassword = true;
-  bool _hasCachedSession = false;
 
   @override
   void initState() {
     super.initState();
-    AuthService.instance.isSignedIn().then((v) {
-      if (mounted) {
-        setState(() {
-          _hasCachedSession = v;
-        });
-      }
-    });
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 620),
@@ -79,40 +71,6 @@ class _LoginScreenState extends State<LoginScreen>
 
       if (!mounted) return;
       _showSnackBar(message: 'Login successful.', isSuccess: true);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      _showSnackBar(
-        message: error.toString().replaceFirst('Exception: ', ''),
-        isSuccess: false,
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _loading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _continueOfflineDemo() async {
-    setState(() {
-      _loading = true;
-    });
-
-    try {
-      await AuthService.instance.startOfflineDemo(
-        email: _emailController.text.trim(),
-      );
-
-      if (!mounted) return;
-      _showSnackBar(
-        message: 'Offline demo mode started. You can test malaria detection now.',
-        isSuccess: true,
-      );
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -196,36 +154,6 @@ class _LoginScreenState extends State<LoginScreen>
                         _TopBar(onBack: () => Navigator.pop(context)),
                         const SizedBox(height: 18),
                         const _LoginHeader(),
-                        if (_hasCachedSession)
-                          const SizedBox(height: 10),
-                        if (_hasCachedSession)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Icon(
-                                  Icons.wifi_off_rounded,
-                                  color: Color(0xFF0F766E),
-                                  size: 16,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Offline access available',
-                                  style: TextStyle(
-                                    color: Color(0xFF0F172A),
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                         const SizedBox(height: 24),
                         _LoginCard(
                           formKey: _formKey,
@@ -239,7 +167,6 @@ class _LoginScreenState extends State<LoginScreen>
                             });
                           },
                           onSubmit: _submit,
-                          onContinueOffline: _continueOfflineDemo,
                         ),
                         const SizedBox(height: 22),
                         _RegisterRedirect(onPressed: _goToRegister),
@@ -400,7 +327,6 @@ class _LoginCard extends StatelessWidget {
     required this.isLoading,
     required this.onTogglePassword,
     required this.onSubmit,
-    required this.onContinueOffline,
   });
 
   final GlobalKey<FormState> formKey;
@@ -410,7 +336,6 @@ class _LoginCard extends StatelessWidget {
   final bool isLoading;
   final VoidCallback onTogglePassword;
   final VoidCallback onSubmit;
-  final VoidCallback onContinueOffline;
 
   @override
   Widget build(BuildContext context) {
@@ -517,12 +442,6 @@ class _LoginCard extends StatelessWidget {
                 isLoading: isLoading,
                 enabled: !isLoading,
                 onPressed: onSubmit,
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: isLoading ? null : onContinueOffline,
-                icon: const Icon(Icons.smartphone),
-                label: const Text('Continue Offline Demo'),
               ),
             ],
           ),
