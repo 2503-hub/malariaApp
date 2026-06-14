@@ -17,6 +17,9 @@ pillow==10.4.0
 # Current Gemini SDK. Do not install google-generativeai alongside this stack.
 google-genai==2.8.0
 httpx==0.28.1
+sqlalchemy==2.0.24
+bcrypt==5.0.0
+python-jose[cryptography]==3.4.1
 
 # Existing data/science utilities used by notebooks and planned reports.
 pandas==2.2.3

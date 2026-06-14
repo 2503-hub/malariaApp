@@ -1,11 +1,13 @@
+import logging
 from io import BytesIO
 from pathlib import Path
 from typing import List
 
 import numpy as np
 import tensorflow as tf
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from PIL import Image
 from pydantic import BaseModel
 from schemas.chat import ChatResponse
@@ -25,6 +27,7 @@ DISPLAY_LABELS = {
     "NotACellImage": "Not Cell Image",
 }
 CONFIDENCE_THRESHOLD = 0.60
+logger = logging.getLogger("malaria_api")
 
 
 class PredictionResult(BaseModel):
@@ -46,7 +49,9 @@ class BatchPredictionResponse(BaseModel):
     summary: BatchSummary
 
 
+from routers.auth import router as auth_router
 from routers.chat import router as chat_router
+from database.database import init_db
 
 
 CHAT_SUGGESTIONS = [
@@ -216,6 +221,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.exception("Unhandled error while processing %s %s", request.method, request.url)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error. Please try again."},
+    )
+
+
+@app.on_event("startup")
+def on_startup() -> None:
+    init_db()
+
 
 # -------------------------
 # LOAD MODEL
@@ -406,6 +426,7 @@ async def predict_batch(files: List[UploadFile] = File(...)):
     )
 
 
+app.include_router(auth_router)
 app.include_router(chat_router)
 
 if __name__ == "__main__":

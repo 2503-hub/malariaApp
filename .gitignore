@@ -18,6 +18,10 @@ pip-delete-this-directory.txt
 # FastAPI / local settings
 .env
 *.env
+backend/*.db
+backend/database/
+backend/*.log
+backend/install-log.txt
 
 # =========================
 # Machine Learning Models
@@ -56,6 +60,7 @@ build/
 .flutter-plugins-dependencies
 .packages
 pubspec.lock
+**/devtools_options.yaml
 
 # Android / iOS
 android/.gradle/

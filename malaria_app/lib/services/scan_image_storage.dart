@@ -2,17 +2,19 @@ import 'dart:io';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
-import 'package:sqflite/sqflite.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ScanImageStorage {
   ScanImageStorage._();
 
   static final ScanImageStorage instance = ScanImageStorage._();
 
-  Future<String> saveImage(XFile image) async {
+  Future<StoredScanImage> saveImage(XFile image) async {
     try {
-      final databasePath = await getDatabasesPath();
-      final scansDirectory = Directory(p.join(databasePath, 'scan_images'));
+      final documentsDirectory = await getApplicationDocumentsDirectory();
+      final scansDirectory = Directory(
+        p.join(documentsDirectory.path, 'scan_images'),
+      );
       if (!scansDirectory.existsSync()) {
         scansDirectory.createSync(recursive: true);
       }
@@ -26,9 +28,9 @@ class ScanImageStorage {
       final savedPath = p.join(scansDirectory.path, fileName);
 
       await File(image.path).copy(savedPath);
-      return savedPath;
+      return StoredScanImage(path: savedPath, isLocalCopy: true);
     } catch (_) {
-      return image.path;
+      return StoredScanImage(path: image.path, isLocalCopy: false);
     }
   }
 
@@ -37,4 +39,11 @@ class ScanImageStorage {
     if (baseName.isEmpty) return 'scan';
     return baseName.replaceAll(RegExp(r'[^A-Za-z0-9_-]+'), '_');
   }
+}
+
+class StoredScanImage {
+  const StoredScanImage({required this.path, required this.isLocalCopy});
+
+  final String path;
+  final bool isLocalCopy;
 }

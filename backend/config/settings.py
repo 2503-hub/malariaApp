@@ -14,6 +14,12 @@ class Settings(BaseSettings):
         default=30.0,
         alias="GEMINI_TIMEOUT_SECONDS",
     )
+    jwt_secret_key: str = Field(default="change-this-secret", alias="JWT_SECRET_KEY")
+    jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
+    jwt_access_token_expires_minutes: int = Field(
+        default=1440,
+        alias="JWT_ACCESS_TOKEN_EXPIRE_MINUTES",
+    )
 
     model_config = SettingsConfigDict(
         env_file=(".env", "backend/.env"),

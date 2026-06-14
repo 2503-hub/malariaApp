@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../models/detection_result.dart';
 import '../models/scan_history.dart';
 
 class HistoryDetailScreen extends StatelessWidget {
@@ -13,6 +14,7 @@ class HistoryDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = _statusColor(scan.prediction);
     final confidence = scan.confidence.clamp(0, 100).toDouble();
+    final displayTitle = scan.isPending ? 'Pending Sync' : scan.prediction;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Scan Details')),
@@ -44,9 +46,13 @@ class HistoryDetailScreen extends StatelessWidget {
                   _DetailRow(label: 'Scan ID', value: '#${scan.id ?? '-'}'),
                   _DetailRow(label: 'Date', value: _formatDate(scan.scannedAt)),
                   _DetailRow(label: 'Image Path', value: scan.imagePath),
+                  _DetailRow(
+                    label: 'Detection Mode',
+                    value: scan.detectionMode.label,
+                  ),
                   const SizedBox(height: 12),
                   Text(
-                    scan.prediction,
+                    displayTitle,
                     style: TextStyle(
                       color: statusColor,
                       fontSize: 28,
@@ -54,35 +60,54 @@ class HistoryDetailScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 18),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Confidence',
-                        style: TextStyle(
-                          color: Color(0xFF334155),
-                          fontWeight: FontWeight.w700,
+                  if (!scan.isPending) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Confidence',
+                          style: TextStyle(
+                            color: Color(0xFF334155),
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      Text(
-                        '${confidence.toStringAsFixed(1)}%',
-                        style: const TextStyle(
-                          color: Color(0xFF0F172A),
-                          fontWeight: FontWeight.w800,
+                        Text(
+                          '${confidence.toStringAsFixed(1)}%',
+                          style: const TextStyle(
+                            color: Color(0xFF0F172A),
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: confidence / 100,
-                      minHeight: 12,
-                      backgroundColor: const Color(0xFFE2E8F0),
-                      color: statusColor,
+                      ],
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: confidence / 100,
+                        minHeight: 12,
+                        backgroundColor: const Color(0xFFE2E8F0),
+                        color: statusColor,
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFFBEB),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
+                      ),
+                      child: const Text(
+                        'This scan is queued locally and will sync automatically when the app reconnects.',
+                        style: TextStyle(
+                          color: Color(0xFF92400E),
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -93,9 +118,11 @@ class HistoryDetailScreen extends StatelessWidget {
   }
 
   Color _statusColor(String prediction) {
-    return switch (prediction) {
-      'Parasitized' => const Color(0xFFDC2626),
-      'Uninfected' => const Color(0xFF16A34A),
+    return switch (prediction.trim().toLowerCase()) {
+      'parasitized' => const Color(0xFFDC2626),
+      'uninfected' => const Color(0xFF16A34A),
+      'uncertain' => const Color(0xFFD97706),
+      'pending sync' => const Color(0xFFD97706),
       _ => const Color(0xFF64748B),
     };
   }
@@ -130,10 +157,7 @@ class _DetailRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _DetailRow({
-    required this.label,
-    required this.value,
-  });
+  const _DetailRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {

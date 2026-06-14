@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict, deque
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from config.settings import settings
 from schemas.chat import ChatMessage, ChatRequest, ChatResponse
@@ -13,6 +13,7 @@ from services.gemini_service import (
     GeminiService,
     GeminiServiceError,
 )
+from utils.security import get_current_user
 
 router = APIRouter(tags=["chat"])
 
@@ -24,14 +25,14 @@ _memory: dict[str, deque[ChatMessage]] = defaultdict(
 
 
 @router.post("/chat", response_model=ChatResponse)
-def chat_endpoint(request: ChatRequest) -> ChatResponse:
+def chat_endpoint(request: ChatRequest, current_user=Depends(get_current_user)) -> ChatResponse:
     if not request.message.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Message cannot be empty.",
         )
 
-    session_id = request.session_id or "default"
+    session_id = request.session_id or f"user-{current_user.id}"
     history = _merged_history(session_id, request.history)
 
     try:

@@ -1,58 +1,79 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../models/user.dart';
+import '../services/auth_service.dart';
+import '../services/offline_analysis_sync_service.dart';
 import 'about_screen.dart';
 import 'batch_analysis_screen.dart';
 import 'history_screen.dart';
 import 'health_assistant_screen.dart';
 import 'image_upload_screen.dart';
+import 'profile_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+  Timer? _syncTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _syncPendingAnalyses();
+    _syncTimer = Timer.periodic(
+      const Duration(seconds: 45),
+      (_) => _syncPendingAnalyses(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _syncTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _syncPendingAnalyses();
+    }
+  }
+
+  Future<void> _syncPendingAnalyses() async {
+    await OfflineAnalysisSyncService.instance.syncPendingAnalyses();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Malaria Detection')),
+      appBar: AppBar(
+        title: const Text('Malaria Detection'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              );
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE6FFFB),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.health_and_safety,
-                    color: Color(0xFF087F7A),
-                    size: 42,
-                  ),
-                  SizedBox(height: 18),
-                  Text(
-                    'Welcome',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Upload or capture a blood smear image to screen for malaria using an AI-assisted CNN workflow.',
-                    style: TextStyle(
-                      color: Color(0xFF475569),
-                      fontSize: 15,
-                      height: 1.45,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildWelcomeCard(),
             const SizedBox(height: 24),
             _HomeAction(
               icon: Icons.photo_library,
@@ -111,6 +132,50 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildWelcomeCard() {
+    return FutureBuilder<User?>(
+      future: AuthService.instance.currentUser(),
+      builder: (context, snapshot) {
+        final fullName = snapshot.data?.fullName ?? 'Welcome';
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE6FFFB),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.health_and_safety,
+                color: Color(0xFF087F7A),
+                size: 42,
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Hello, $fullName',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Upload or capture a blood smear image to screen for malaria entirely on the device, with saved history and optional sync support.',
+                style: TextStyle(
+                  color: Color(0xFF475569),
+                  fontSize: 15,
+                  height: 1.45,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

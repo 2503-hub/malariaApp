@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../models/batch_prediction.dart';
+import '../models/detection_result.dart';
 import '../models/scan_history.dart';
 import '../repositories/scan_history_repository.dart';
 import '../services/ai_service.dart';
@@ -24,6 +25,7 @@ class _BatchAnalysisScreenState extends State<BatchAnalysisScreen> {
   BatchPredictionResponse? _batchResponse;
   bool _isUploading = false;
   String? _errorMessage;
+  bool _isErrorMessage = true;
 
   Future<void> _pickImages() async {
     final pickedImages = await _picker.pickMultiImage();
@@ -35,6 +37,7 @@ class _BatchAnalysisScreenState extends State<BatchAnalysisScreen> {
         ..addAll(pickedImages);
       _batchResponse = null;
       _errorMessage = null;
+      _isErrorMessage = true;
     });
   }
 
@@ -44,6 +47,7 @@ class _BatchAnalysisScreenState extends State<BatchAnalysisScreen> {
     setState(() {
       _isUploading = true;
       _errorMessage = null;
+      _isErrorMessage = true;
       _batchResponse = null;
     });
 
@@ -55,19 +59,22 @@ class _BatchAnalysisScreenState extends State<BatchAnalysisScreen> {
       setState(() {
         _batchResponse = response;
       });
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
 
       setState(() {
-        _errorMessage =
-            'Unable to complete batch analysis. Check that the backend server is running.';
+        final message = error.toString().replaceFirst('Exception: ', '');
+        _errorMessage = message.isEmpty
+            ? 'Unable to complete batch analysis on the device.'
+            : message;
+        _isErrorMessage = true;
       });
     } finally {
-      if (!mounted) return;
-
-      setState(() {
-        _isUploading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
     }
   }
 
@@ -82,16 +89,18 @@ class _BatchAnalysisScreenState extends State<BatchAnalysisScreen> {
           ? _selectedImages[index]
           : null;
       final image = imagesByName[result.imageName] ?? fallbackImage;
-      final savedImagePath = image == null
-          ? result.imageName
+      final storedImage = image == null
+          ? null
           : await _imageStorage.saveImage(image);
 
       await _historyRepository.saveScan(
         ScanHistory(
           scannedAt: DateTime.now(),
-          imagePath: savedImagePath,
+          imagePath: storedImage?.path ?? result.imageName,
+          isLocalCopy: storedImage?.isLocalCopy ?? false,
           prediction: result.prediction,
           confidence: result.confidence,
+          detectionMode: DetectionMode.offline,
         ),
       );
     }
@@ -149,8 +158,9 @@ class _BatchAnalysisScreenState extends State<BatchAnalysisScreen> {
             ),
             const SizedBox(height: 18),
             ElevatedButton.icon(
-              onPressed:
-                  _selectedImages.isEmpty || _isUploading ? null : _analyzeBatch,
+              onPressed: _selectedImages.isEmpty || _isUploading
+                  ? null
+                  : _analyzeBatch,
               icon: _isUploading
                   ? const SizedBox(
                       width: 18,
@@ -165,7 +175,7 @@ class _BatchAnalysisScreenState extends State<BatchAnalysisScreen> {
             ),
             if (_errorMessage != null) ...[
               const SizedBox(height: 16),
-              _StatusMessage(message: _errorMessage!),
+              _StatusMessage(message: _errorMessage!, isError: _isErrorMessage),
             ],
             if (response != null) ...[
               const SizedBox(height: 22),
@@ -184,10 +194,7 @@ class _PreviewSection extends StatelessWidget {
   final List<XFile> images;
   final ValueChanged<int>? onRemove;
 
-  const _PreviewSection({
-    required this.images,
-    required this.onRemove,
-  });
+  const _PreviewSection({required this.images, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
@@ -256,10 +263,7 @@ class _PreviewTile extends StatelessWidget {
   final XFile image;
   final VoidCallback? onRemove;
 
-  const _PreviewTile({
-    required this.image,
-    required this.onRemove,
-  });
+  const _PreviewTile({required this.image, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
@@ -368,15 +372,13 @@ class _PredictionChip extends StatelessWidget {
     final color = switch (prediction) {
       'Parasitized' => const Color(0xFFDC2626),
       'Uninfected' => const Color(0xFF16A34A),
+      'Uncertain' => const Color(0xFFD97706),
       _ => const Color(0xFF64748B),
     };
 
     return Text(
       prediction,
-      style: TextStyle(
-        color: color,
-        fontWeight: FontWeight.w800,
-      ),
+      style: TextStyle(color: color, fontWeight: FontWeight.w800),
     );
   }
 }
@@ -434,10 +436,7 @@ class _SummaryRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _SummaryRow({
-    required this.label,
-    required this.value,
-  });
+  const _SummaryRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -469,29 +468,43 @@ class _SummaryRow extends StatelessWidget {
 
 class _StatusMessage extends StatelessWidget {
   final String message;
+  final bool isError;
 
-  const _StatusMessage({required this.message});
+  const _StatusMessage({required this.message, required this.isError});
 
   @override
   Widget build(BuildContext context) {
+    final backgroundColor = isError
+        ? const Color(0xFFFEF2F2)
+        : const Color(0xFFFFFBEB);
+    final borderColor = isError
+        ? const Color(0xFFFECACA)
+        : const Color(0xFFFDE68A);
+    final iconColor = isError
+        ? const Color(0xFFDC2626)
+        : const Color(0xFFD97706);
+    final textColor = isError
+        ? const Color(0xFF7F1D1D)
+        : const Color(0xFF92400E);
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2),
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFFECACA)),
+        border: Border.all(color: borderColor),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: Color(0xFFDC2626)),
+          Icon(
+            isError ? Icons.error_outline : Icons.schedule,
+            color: iconColor,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
-                color: Color(0xFF7F1D1D),
-                fontWeight: FontWeight.w700,
-              ),
+              style: TextStyle(color: textColor, fontWeight: FontWeight.w700),
             ),
           ),
         ],

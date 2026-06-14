@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../controllers/scan_history_controller.dart';
+import '../models/detection_result.dart';
 import '../models/scan_history.dart';
 import 'history_detail_screen.dart';
 
@@ -59,7 +60,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Clear History'),
-          content: const Text('Delete all saved scan history from this device?'),
+          content: const Text(
+            'Delete all saved scan history from this device?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -258,6 +261,11 @@ class _HistoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = _statusColor(scan.prediction);
+    final displayPrediction = scan.isPending ? 'Pending Sync' : scan.prediction;
+    final secondaryLine = scan.isPending
+        ? 'Waiting for connection'
+        : '${scan.confidence.toStringAsFixed(1)}% confidence';
+    final modeLabel = scan.detectionMode.shortLabel;
 
     return Material(
       color: Colors.white,
@@ -280,7 +288,7 @@ class _HistoryTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      scan.prediction,
+                      displayPrediction,
                       style: TextStyle(
                         color: statusColor,
                         fontWeight: FontWeight.w800,
@@ -294,12 +302,14 @@ class _HistoryTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${scan.confidence.toStringAsFixed(1)}% confidence',
+                      secondaryLine,
                       style: const TextStyle(
                         color: Color(0xFF334155),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                    const SizedBox(height: 6),
+                    _ModeChip(label: modeLabel, isPending: scan.isPending),
                   ],
                 ),
               ),
@@ -316,9 +326,12 @@ class _HistoryTile extends StatelessWidget {
   }
 
   Color _statusColor(String prediction) {
-    return switch (prediction) {
-      'Parasitized' => const Color(0xFFDC2626),
-      'Uninfected' => const Color(0xFF16A34A),
+    final normalized = prediction.trim().toLowerCase();
+    return switch (normalized) {
+      'parasitized' => const Color(0xFFDC2626),
+      'uninfected' => const Color(0xFF16A34A),
+      'uncertain' => const Color(0xFFD97706),
+      'pending sync' => const Color(0xFFD97706),
       _ => const Color(0xFF64748B),
     };
   }
@@ -328,6 +341,42 @@ class _HistoryTile extends StatelessWidget {
     final hour = local.hour.toString().padLeft(2, '0');
     final minute = local.minute.toString().padLeft(2, '0');
     return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')} $hour:$minute';
+  }
+}
+
+class _ModeChip extends StatelessWidget {
+  final String label;
+  final bool isPending;
+
+  const _ModeChip({required this.label, required this.isPending});
+
+  @override
+  Widget build(BuildContext context) {
+    final backgroundColor = isPending
+        ? const Color(0xFFFFFBEB)
+        : const Color(0xFFE0F2FE);
+    final foregroundColor = isPending
+        ? const Color(0xFF92400E)
+        : const Color(0xFF075985);
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          isPending ? 'Queued locally' : '$label mode',
+          style: TextStyle(
+            color: foregroundColor,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
   }
 }
 

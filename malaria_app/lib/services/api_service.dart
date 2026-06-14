@@ -1,27 +1,25 @@
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 class ApiService {
   static Future<void> sendImage(File imageFile) async {
-    var uri = Uri.parse("http://192.168.198.21:8000/predict");
+    var uri = Uri.parse("http://192.168.213.21:8000/predict");
 
     var request = http.MultipartRequest('POST', uri);
 
     request.files.add(
-      await http.MultipartFile.fromPath(
-        'file',
-        imageFile.path,
-      ),
+      await http.MultipartFile.fromPath('file', imageFile.path),
     );
 
     try {
       var response = await request.send();
       var responseBody = await response.stream.bytesToString();
 
-      print("STATUS CODE: ${response.statusCode}");
-      print("RESPONSE: $responseBody");
+      debugPrint("STATUS CODE: ${response.statusCode}");
+      debugPrint("RESPONSE: $responseBody");
     } catch (e) {
-      print("ERROR: $e");
+      debugPrint("ERROR: $e");
     }
   }
 }

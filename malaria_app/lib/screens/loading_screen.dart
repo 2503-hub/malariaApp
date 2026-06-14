@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../models/detection_result.dart';
 import '../models/scan_history.dart';
 import '../repositories/scan_history_repository.dart';
 import '../services/scan_image_storage.dart';
@@ -27,23 +28,23 @@ class _LoadingScreenState extends State<LoadingScreen> {
     analyze();
   }
 
-  void analyze() async {
+  Future<void> analyze() async {
     setState(() {
       errorMessage = null;
     });
 
     try {
-      final result = await AIService.predict(widget.image);
-      final label = result["label"] as String;
-      final confidence = (result["confidence"] as num).toDouble();
-      final savedImagePath = await _imageStorage.saveImage(widget.image);
+      final DetectionResult result = await AIService.predict(widget.image);
+      final storedImage = await _imageStorage.saveImage(widget.image);
 
       await _historyRepository.saveScan(
         ScanHistory(
           scannedAt: DateTime.now(),
-          imagePath: savedImagePath,
-          prediction: label,
-          confidence: confidence,
+          imagePath: storedImage.path,
+          isLocalCopy: storedImage.isLocalCopy,
+          prediction: result.prediction,
+          confidence: result.confidence,
+          detectionMode: result.mode,
         ),
       );
 
@@ -54,8 +55,11 @@ class _LoadingScreenState extends State<LoadingScreen> {
         MaterialPageRoute(
           builder: (_) => ResultScreen(
             image: widget.image,
-            label: label,
-            confidence: confidence,
+            label: result.prediction,
+            confidence: result.confidence,
+            detectionMode: result.mode,
+            processingTimeMs: result.processingTimeMs,
+            detail: result.detail,
           ),
         ),
       );
@@ -63,7 +67,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
       if (!mounted) return;
 
       setState(() {
-        errorMessage = "Unable to connect to the prediction server.";
+        errorMessage = error.toString().replaceFirst('Exception: ', '');
       });
     }
   }
@@ -88,7 +92,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Please wait while the CNN model checks the selected sample.',
+                  'Please wait while the on-device model checks the selected sample.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Color(0xFF64748B)),
                 ),
@@ -110,7 +114,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'You can retry when the backend is running, or open the result screen later when the model is connected.',
+                  'You can retry after checking the image or model file on the device.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Color(0xFF64748B)),
                 ),

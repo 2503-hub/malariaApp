@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import '../models/chat_message.dart';
 import '../services/chat_service.dart';
 import '../repositories/scan_history_repository.dart';
-import '../models/scan_history.dart';
 
 class HealthAssistantScreen extends StatefulWidget {
   const HealthAssistantScreen({super.key});
@@ -69,9 +68,11 @@ class _HealthAssistantScreenState extends State<HealthAssistantScreen> {
         final scans = await repo.getScans();
         if (scans.isNotEmpty) {
           final last = scans.first;
-          message = 'Please explain this analysis result: ${last.prediction} with ${last.confidence}% confidence.';
+          message =
+              'Please explain this analysis result: ${last.prediction} with ${last.confidence}% confidence.';
         } else {
-          message = 'I recently analyzed no images. Please run an analysis first.';
+          message =
+              'I recently analyzed no images. Please run an analysis first.';
         }
       } catch (_) {
         message = 'I could not access recent analysis results.';
@@ -125,11 +126,11 @@ class _HealthAssistantScreenState extends State<HealthAssistantScreen> {
         );
       });
     } finally {
-      if (!mounted) return;
-
-      setState(() {
-        _isTyping = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isTyping = false;
+        });
+      }
       await ChatService.saveHistory(_messages);
       _scrollToBottom();
     }
@@ -288,8 +289,7 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.isUser;
-    final backgroundColor =
-        isUser ? const Color(0xFF087F7A) : Colors.white;
+    final backgroundColor = isUser ? const Color(0xFF087F7A) : Colors.white;
     final textColor = isUser ? Colors.white : const Color(0xFF0F172A);
     final alignment = isUser ? Alignment.centerRight : Alignment.centerLeft;
 
@@ -308,21 +308,16 @@ class _MessageBubble extends StatelessWidget {
               bottomLeft: Radius.circular(isUser ? 8 : 2),
               bottomRight: Radius.circular(isUser ? 2 : 8),
             ),
-            border: isUser
-                ? null
-                : Border.all(color: const Color(0xFFE2E8F0)),
+            border: isUser ? null : Border.all(color: const Color(0xFFE2E8F0)),
           ),
           child: Column(
-            crossAxisAlignment:
-                isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            crossAxisAlignment: isUser
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
             children: [
               Text(
                 message.text,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 15,
-                  height: 1.4,
-                ),
+                style: TextStyle(color: textColor, fontSize: 15, height: 1.4),
               ),
               const SizedBox(height: 7),
               Text(
