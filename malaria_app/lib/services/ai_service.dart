@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../core/constants.dart';
 import 'auth_service.dart';
 import 'on_device_malaria_service.dart';
 import '../models/batch_prediction.dart';
@@ -13,8 +14,6 @@ import '../models/chat_message.dart';
 import '../models/detection_result.dart';
 
 class AIService {
-  static const String baseUrl = 'http://192.168.213.21:8000';
-
   static Future<DetectionResult> predict(XFile image) async {
     return OnDeviceMalariaService.instance.predict(image);
   }
@@ -43,7 +42,7 @@ class AIService {
   }
 
   static Future<Map<String, dynamic>> predictRemote(XFile image) async {
-    final uri = Uri.parse('$baseUrl/predict');
+    final uri = Uri.parse('${ApiConstants.baseUrl}/predict');
     final request = http.MultipartRequest('POST', uri);
     final bytes = await image.readAsBytes();
 
@@ -79,7 +78,7 @@ class AIService {
   static Future<BatchPredictionResponse> predictBatchRemote(
     List<XFile> images,
   ) async {
-    final uri = Uri.parse('$baseUrl/predict-batch');
+    final uri = Uri.parse('${ApiConstants.baseUrl}/predict-batch');
     final request = http.MultipartRequest('POST', uri);
 
     for (final image in images) {
@@ -120,7 +119,7 @@ class AIService {
     String message, {
     List<ChatMessage> history = const [],
   }) async {
-    final uri = Uri.parse('$baseUrl/chat');
+    final uri = Uri.parse('${ApiConstants.baseUrl}/chat');
     final recentHistory = history.length > 12
         ? history.sublist(history.length - 12)
         : history;

@@ -2,9 +2,11 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
+import '../core/constants.dart';
+
 class ApiService {
   static Future<void> sendImage(File imageFile) async {
-    var uri = Uri.parse("http://192.168.213.21:8000/predict");
+    var uri = Uri.parse("${ApiConstants.baseUrl}/predict");
 
     var request = http.MultipartRequest('POST', uri);
 

@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
+import '../core/constants.dart';
 import '../models/user.dart';
 
 class AuthService {
@@ -12,7 +13,6 @@ class AuthService {
 
   static final AuthService instance = AuthService._();
 
-  static const String _baseUrl = 'http://192.168.213.21:8000';
   static const String _tokenKey = 'auth_token';
   static const String _userKey = 'auth_user';
 
@@ -66,7 +66,7 @@ class AuthService {
   }
 
   Future<void> register(String fullName, String email, String password) async {
-    final uri = Uri.parse('$_baseUrl/auth/register');
+    final uri = Uri.parse('${ApiConstants.baseUrl}/auth/register');
 
     try {
       final response = await http
@@ -96,7 +96,7 @@ class AuthService {
   }
 
   Future<User> login(String email, String password) async {
-    final uri = Uri.parse('$_baseUrl/auth/login');
+    final uri = Uri.parse('${ApiConstants.baseUrl}/auth/login');
 
     try {
       final response = await http
@@ -130,7 +130,7 @@ class AuthService {
 
   Future<User?> refreshProfile() async {
     final headers = await authHeaders();
-    final uri = Uri.parse('$_baseUrl/auth/me');
+    final uri = Uri.parse('${ApiConstants.baseUrl}/auth/me');
     try {
       final response = await http
           .get(uri, headers: headers)
@@ -166,7 +166,7 @@ class AuthService {
 
   Future<void> logout() async {
     final headers = await authHeaders();
-    final uri = Uri.parse('$_baseUrl/auth/logout');
+    final uri = Uri.parse('${ApiConstants.baseUrl}/auth/logout');
 
     try {
       await http

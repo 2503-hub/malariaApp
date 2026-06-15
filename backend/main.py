@@ -1,7 +1,6 @@
 import logging
 from io import BytesIO
 import os
-import os
 from pathlib import Path
 from typing import List
 
@@ -9,8 +8,8 @@ import numpy as np
 import tensorflow as tf
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from huggingface_hub import hf_hub_download
 from fastapi.responses import JSONResponse
+from huggingface_hub import hf_hub_download
 from PIL import Image
 from pydantic import BaseModel
 from schemas.chat import ChatResponse
@@ -19,17 +18,18 @@ from schemas.chat import ChatResponse
 # CONFIG
 # -------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
-# Download model from HF Hub if not available locally
 _local_model = BASE_DIR / "malaria_model.keras"
 if _local_model.exists():
     MODEL_PATH = _local_model
 else:
-    MODEL_PATH = Path(hf_hub_download(
-        repo_id="Mari-25/malaria-model",
-        filename="malaria_model.keras",
-        token=os.getenv("HF_TOKEN")
-    ))
-    
+    MODEL_PATH = Path(
+        hf_hub_download(
+            repo_id="Mari-25/malaria-model",
+            filename="malaria_model.keras",
+            token=os.getenv("HF_TOKEN"),
+        )
+    )
+
 IMG_SIZE = (64, 64)
 # Must match the notebook's image_dataset_from_directory(class_names=...) order.
 CLASS_NAMES = ["Parasitized", "Uninfected", "NotACellImage"]
