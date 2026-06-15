@@ -1,5 +1,7 @@
 import logging
 from io import BytesIO
+import os
+import os
 from pathlib import Path
 from typing import List
 
@@ -7,6 +9,7 @@ import numpy as np
 import tensorflow as tf
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from huggingface_hub import hf_hub_download
 from fastapi.responses import JSONResponse
 from PIL import Image
 from pydantic import BaseModel
@@ -16,8 +19,17 @@ from schemas.chat import ChatResponse
 # CONFIG
 # -------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
-MODEL_PATH = BASE_DIR / "malaria_model.keras"
-
+# Download model from HF Hub if not available locally
+_local_model = BASE_DIR / "malaria_model.keras"
+if _local_model.exists():
+    MODEL_PATH = _local_model
+else:
+    MODEL_PATH = Path(hf_hub_download(
+        repo_id="Mari-25/malaria-model",
+        filename="malaria_model.keras",
+        token=os.getenv("HF_TOKEN")
+    ))
+    
 IMG_SIZE = (64, 64)
 # Must match the notebook's image_dataset_from_directory(class_names=...) order.
 CLASS_NAMES = ["Parasitized", "Uninfected", "NotACellImage"]
@@ -330,7 +342,7 @@ def answer_chat(message: str) -> ChatResponse:
 def health_check():
     return {
         "status": "running",
-        "model": MODEL_PATH.name,
+        "model": Path(MODEL_PATH).name,
         "classes": CLASS_NAMES,
     }
 
@@ -431,4 +443,4 @@ app.include_router(chat_router)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=7860, reload=True)

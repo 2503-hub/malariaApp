@@ -22,12 +22,13 @@ backend/*.db
 backend/database/
 backend/*.log
 backend/install-log.txt
+malaria-detection-api/
 
 # =========================
 # Machine Learning Models
 # =========================
-# Custom: Kept *.keras unblocked because malaria_model.keras (~8MB) is light 
-# and needed for the deployment app to run immediately.
+malaria_model.keras
+*.keras
 *.h5
 *.pt
 *.pth
